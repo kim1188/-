@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>밤 도시 비 배경</title>
+<meta name="description" content="원근감 있는 빗줄기와 젖은 바닥 반사가 있는 밤 도시 비 배경 미리보기">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@200;300&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root {
+    /* Layout: 화면 전체가 비 내리는 도시. 제목은 어두운 하늘(왼쪽 위)에, 조절 패널은 오른쪽 아래에 띄운다 */
+    --night: #04060c;
+    --ink: #eef2f8;
+    --ink-soft: #b3bccb;
+    --ink-faint: #7b869a;
+    --sodium: #ffb36b;          /* 나트륨 가로등 빛 */
+    --sodium-soft: rgba(255, 179, 107, 0.3);
+    --sodium-glow: rgba(255, 179, 107, 0.45);
+    --glass: rgba(10, 14, 24, 0.62);
+    --glass-hover: rgba(205, 220, 245, 0.12);
+    --chip: rgba(205, 220, 245, 0.06);
+    --hairline: rgba(205, 220, 245, 0.14);
+    --track: rgba(205, 220, 245, 0.2);
+    --thumb: #0b0f19;
+    --scrim: rgba(2, 4, 9, 0.5);
+    --scrim-clear: rgba(2, 4, 9, 0);
+    --shadow: rgba(0, 0, 0, 0.45);
+    --font-display: "Hahmlet", "Noto Serif KR", "Nanum Myeongjo", "AppleMyungjo", serif;
+    --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--night);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    word-break: keep-all;          /* 한국어를 낱말 단위로 줄바꿈 */
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .scene { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 0; }
+
+  .stage {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;              /* 제목 뒤 그늘이 화면 밖으로 삐져나가 가로 스크롤이 생기지 않게 */
+    box-sizing: border-box;
+    min-height: 100%;
+    padding-inline: clamp(16px, 6vw, 96px);
+    padding-block: clamp(40px, 11vh, 132px) 40px;
+  }
+
+  .hero { position: relative; max-width: 34rem; }
+  .hero::before {
+    /* 번개가 쳐서 하늘이 밝아져도 글이 묻히지 않게 깔아 두는 옅은 그늘 */
+    content: "";
+    position: absolute;
+    inset: -20% -30% -24% -40%;
+    z-index: -1;
+    background: radial-gradient(closest-side, var(--scrim), var(--scrim-clear));
+    pointer-events: none;
+  }
+  .eyebrow {
+    margin: 0 0 18px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--sodium);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 200;
+    font-size: clamp(44px, 3.2vw + 28px, 92px);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    text-shadow: 0 2px 30px var(--shadow);
+  }
+  .lede {
+    margin: 22px 0 0;
+    max-width: 30em;
+    font-size: 16.5px;
+    line-height: 1.8;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+    text-shadow: 0 1px 12px var(--shadow);
+  }
+  .meta {
+    margin: 24px 0 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  /* ── 조절 패널 ── */
+  .panel {
+    position: fixed;
+    z-index: 2;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    width: min(344px, calc(100vw - 32px));
+    max-height: calc(100% - 32px);
+    overflow: auto;
+    background: var(--glass);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    backdrop-filter: blur(16px) saturate(1.3);
+    box-shadow: 0 20px 60px var(--shadow);
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 16px;
+  }
+  .panel-head::-webkit-details-marker { display: none; }
+  .panel-title { font-size: 14px; font-weight: 600; }
+  .panel-readout {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .panel[open] .panel-readout { visibility: hidden; }
+  .chev { flex: none; width: 16px; height: 16px; color: var(--ink-faint); transition: transform 0.2s; }
+  .panel[open] .chev { transform: rotate(180deg); }
+  .panel-body {
+    display: grid;
+    gap: 20px;
+    padding: 16px;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .field-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .field-row label { font-size: 13px; color: var(--ink-soft); }
+  .value { display: inline-flex; align-items: baseline; gap: 6px; font-size: 13px; color: var(--ink); }
+  .num { font-family: var(--font-mono); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .unit { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+
+  .range {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 26px;
+    margin: 4px 0 0;
+    background: transparent;
+    cursor: pointer;
+    --fill: 0%;
+    --a: 50%;
+    --b: 50%;
+  }
+  .range:focus-visible { outline: none; }
+  .range::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(to right, var(--sodium) 0 var(--fill), var(--track) var(--fill) 100%);
+  }
+  .range--center::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, var(--track) 0 var(--a), var(--sodium) var(--a) var(--b), var(--track) var(--b) 100%);
+  }
+  .range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: var(--thumb);
+    border: 2px solid var(--sodium);
+    box-shadow: 0 0 14px var(--sodium-glow);
+  }
+  .range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--sodium-soft), 0 0 14px var(--sodium-glow); }
+  .range::-moz-range-track { height: 2px; border-radius: 1px; background: var(--track); }
+  .range::-moz-range-progress { height: 2px; border-radius: 1px; background: var(--sodium); }
+  .range--center::-moz-range-progress { background: transparent; }
+  .range--center::-moz-range-track {
+    background: linear-gradient(to right, var(--track) 0 var(--a), var(--sodium) var(--a) var(--b), var(--track) var(--b) 100%);
+  }
+  .range::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--thumb);
+    border: 2px solid var(--sodium);
+    box-shadow: 0 0 14px var(--sodium-glow);
+  }
+  .range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--sodium-soft), 0 0 14px var(--sodium-glow); }
+
+  /* 기상청 강수 강도 구분. 누르면 그 구간으로 바로 이동 */
+  .scale { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .scale button {
+    appearance: none;
+    padding: 3px 0 2px 6px;
+    background: none;
+    border: 0;
+    border-left: 1px solid var(--hairline);
+    color: var(--ink-faint);
+    font: inherit;
+    font-size: 11px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .scale button:first-child { padding-left: 0; border-left: 0; }
+  .scale button:hover { color: var(--ink-soft); }
+  .scale button[aria-current="true"] { color: var(--sodium); }
+  .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-faint); }
+
+  .switches { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+  .switch { position: relative; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); cursor: pointer; }
+  .switch input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
+  .knob { position: relative; flex: none; width: 28px; height: 16px; border-radius: 8px; background: var(--track); transition: background 0.2s; }
+  .knob::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--ink-soft);
+    transition: transform 0.2s, background 0.2s;
+  }
+  .switch input:checked + .knob { background: var(--sodium-soft); }
+  .switch input:checked + .knob::after { transform: translateX(12px); background: var(--sodium); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    appearance: none;
+    padding: 7px 12px;
+    background: var(--chip);
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--glass-hover); }
+  .btn svg { width: 14px; height: 14px; fill: currentColor; }
+  .note { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
+
+  .panel-head:focus-visible,
+  .scale button:focus-visible,
+  .btn:focus-visible,
+  .switch input:focus-visible + .knob { outline: 2px solid var(--sodium); outline-offset: 2px; }
+
+  @media (max-width: 640px) {
+    .panel { left: 16px; right: 16px; width: auto; }
+    .stage { padding-bottom: 96px; }
+    .lede { font-size: 15.5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chev, .knob, .knob::after, .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="scene" id="scene"></div>
+
+<main class="stage">
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <p class="eyebrow">RAINSCENE 1.0 · 배경 미리보기</p>
+    <h1 id="hero-title">비 내리는 밤</h1>
+    <p class="lede">먼 비는 가늘고 촘촘하게, 가까운 비는 굵고 빠르게 내려요. 도시 불빛은 젖은 바닥에 길게 번지고, 불빛 앞을 지나는 빗줄기만 환하게 빛나요.</p>
+    <p class="meta">rain-scene.js 파일 하나 · 의존성 없음</p>
+  </section>
+</main>
+
+<details class="panel" id="panel">
+  <summary class="panel-head">
+    <span class="panel-title">장면 설정</span>
+    <span class="panel-readout" id="readout"></span>
+    <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="panel-body">
+    <div class="field">
+      <div class="field-row">
+        <label for="rain">강수</label>
+        <output class="value" for="rain"><span id="rain-class"></span><span class="num" id="rain-num"></span><span class="unit">mm/h</span></output>
+      </div>
+      <input class="range" type="range" id="rain" min="0" max="1000" step="1" value="365">
+      <div class="scale" id="rain-scale">
+        <button type="button" data-seg="0">약한 비</button>
+        <button type="button" data-seg="1">보통 비</button>
+        <button type="button" data-seg="2">강한 비</button>
+        <button type="button" data-seg="3">매우 강한 비</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-row">
+        <label for="wind">바람</label>
+        <output class="value" for="wind"><span id="wind-dir"></span><span class="num" id="wind-num"></span><span class="unit">m/s</span></output>
+      </div>
+      <input class="range range--center" type="range" id="wind" min="-100" max="100" step="1" value="20">
+      <div class="ends" aria-hidden="true"><span>← 동풍</span><span>서풍 →</span></div>
+    </div>
+
+    <div class="switches">
+      <label class="switch"><input type="checkbox" id="opt-lightning" checked><span class="knob" aria-hidden="true"></span>번개</label>
+      <label class="switch" title="마우스를 따라 배경이 살짝 움직여요"><input type="checkbox" id="opt-parallax" checked><span class="knob" aria-hidden="true"></span>깊이감</label>
+      <label class="switch"><input type="checkbox" id="opt-grain" checked><span class="knob" aria-hidden="true"></span>필름 그레인</label>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn" id="btn-play">
+        <svg viewBox="0 0 16 16" aria-hidden="true" id="icon-pause"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true" id="icon-play" hidden><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.7-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z"/></svg>
+        <span id="play-label">일시정지</span>
+      </button>
+      <button type="button" class="btn" id="btn-strike">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.4 1.2 3.4 9.1h4.1l-1.1 5.7 6.2-8H8.4z"/></svg>
+        번개 치기
+      </button>
+      <button type="button" class="btn" id="btn-text" aria-pressed="false">글 숨기기</button>
+    </div>
+
+    <p class="note" id="motion-note" hidden>기기에 '동작 줄이기'가 켜져 있어 멈춘 화면으로 시작했어요. 재생을 누르면 움직여요.</p>
+  </div>
+</details>
+
+<script src="rain-scene.js"></script>
+<script>
+  (function () {
+    const $ = id => document.getElementById(id);
+
+    let scene = null;
+    try {
+      scene = RainScene.mount($('scene'), { intensity: 0.55, wind: 0.2 });
+    } catch (err) {
+      console.error(err);
+    }
+    window.rainScene = scene;
+
+    // 슬라이더를 기상청 강수 구분 네 구간으로 똑같이 나누고, 구간 안에서는 로그 눈금으로 움직인다
+    const SEGMENTS = [[0.3, 3], [3, 15], [15, 30], [30, 60]];
+    const LABELS = ['약한 비', '보통 비', '강한 비', '매우 강한 비'];
+    const segAt = p => Math.min(3, Math.floor(p * 4));
+    const mmhAt = p => {
+      const k = segAt(p), a = SEGMENTS[k][0], b = SEGMENTS[k][1];
+      return a * Math.pow(b / a, p * 4 - k);
+    };
+    const intensityOf = mmh => Math.max(0, Math.min(1, Math.log(mmh / 0.4) / Math.log(150)));
+    const fmt = v => (v < 10 ? v.toFixed(1) : String(Math.round(v)));
+
+    const rain = $('rain'), wind = $('wind'), segButtons = document.querySelectorAll('#rain-scale button');
+
+    function updateRain(apply) {
+      const p = rain.value / 1000, mmh = mmhAt(p), seg = segAt(p);
+      $('rain-class').textContent = LABELS[seg];
+      $('rain-num').textContent = fmt(mmh);
+      $('readout').textContent = LABELS[seg] + ' · ' + fmt(mmh) + ' mm/h';
+      rain.style.setProperty('--fill', p * 100 + '%');
+      rain.setAttribute('aria-valuetext', LABELS[seg] + ', 시간당 ' + fmt(mmh) + '밀리미터');
+      segButtons.forEach((b, i) => b.setAttribute('aria-current', String(i === seg)));
+      if (apply && scene) scene.set({ intensity: intensityOf(mmh) });
+    }
+    function updateWind(apply) {
+      const w = wind.value / 100, ms = Math.abs(w) * 14;
+      const dir = ms < 0.5 ? '바람 없음' : w > 0 ? '서풍' : '동풍';
+      $('wind-dir').textContent = dir;
+      $('wind-num').textContent = ms < 0.5 ? '0' : fmt(ms);
+      wind.style.setProperty('--a', Math.min(50, 50 + w * 50) + '%');
+      wind.style.setProperty('--b', Math.max(50, 50 + w * 50) + '%');
+      wind.setAttribute('aria-valuetext', dir + ' 초속 ' + fmt(ms) + '미터');
+      if (apply && scene) scene.set({ wind: w });
+    }
+    rain.addEventListener('input', () => updateRain(true));
+    wind.addEventListener('input', () => updateWind(true));
+    segButtons.forEach(b => b.addEventListener('click', () => {
+      rain.value = Math.round((+b.dataset.seg + 0.5) * 250);
+      updateRain(true);
+    }));
+    updateRain(false);
+    updateWind(false);
+
+    $('opt-lightning').addEventListener('change', e => scene && scene.set({ lightning: e.target.checked }));
+    $('opt-parallax').addEventListener('change', e => scene && scene.set({ parallax: e.target.checked }));
+    $('opt-grain').addEventListener('change', e => scene && scene.set({ grain: e.target.checked }));
+
+    function syncPlay() {
+      const on = !!(scene && scene.playing);
+      $('play-label').textContent = on ? '일시정지' : '재생';
+      // SVG 요소에는 .hidden 속성이 없어서 속성 자체를 토글한다
+      $('icon-pause').toggleAttribute('hidden', !on);
+      $('icon-play').toggleAttribute('hidden', on);
+    }
+    $('btn-play').addEventListener('click', () => {
+      if (!scene) return;
+      scene.toggle();
+      syncPlay();
+    });
+    $('btn-strike').addEventListener('click', () => scene && scene.strike());
+    $('btn-text').addEventListener('click', e => {
+      const hero = $('hero');
+      hero.hidden = !hero.hidden;
+      e.currentTarget.textContent = hero.hidden ? '글 보이기' : '글 숨기기';
+      e.currentTarget.setAttribute('aria-pressed', String(hero.hidden));
+    });
+
+    if (scene && scene.reducedMotion) $('motion-note').hidden = false;
+    syncPlay();
+
+    // 넓고 높은 화면에서만 패널을 펼친 채 시작 (작은 화면에서는 제목을 가리지 않게)
+    if (window.matchMedia('(min-width: 720px) and (min-height: 680px)').matches) $('panel').open = true;
+  })();
+</script>
+</body>
+</html>
